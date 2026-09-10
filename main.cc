@@ -4,53 +4,51 @@
 #include <memory>
 #include <type_traits>
 
-template<class t, class allocator = std::allocator<t>>
-struct continuos_container{
+template<class t = int, class allocator = std::allocator<t>>
+struct box{
     using type = t;
     using simple_stack = allocator;
     bool borrow = true;
     constexpr int BorrowType(){
-        if(!std::is_integral<type>()){
-            borrow = false;
-            std::cout << "err";
-
-        }
+        (std::is_floating_point<type>() ||
+            std::is_arithmetic<type>() ||
+            std::is_integral<type>()) ? borrow = true : borrow = false;
         return borrow;
     }
     struct iterator{
-        type *dyn;
-        iterator(type *dyn_) : dyn(dyn_){}
+        type *obj;
+        iterator(type *obj) : obj(obj){}
 
         type& operator*() const{
-            return  *dyn;
+            return  *obj;
         }
         type* operator->() const{
-            return dyn;
+            return obj;
         }
         iterator operator++(){
-            ++dyn;
+            ++obj;
             return *this;
         }
         bool operator==(const iterator &other_obj) const{
-            return dyn == other_obj.dyn;
+            return obj == other_obj.obj;
         }
         bool operator !=(const iterator &other_obj) const{
-            return dyn != other_obj.dyn;
+            return obj != other_obj.obj;
         }
     };
     type *heap;
     size_t size;
     size_t capacity;
 
-    continuos_container() : heap(nullptr),
+    box() : heap(nullptr),
         size(0),
         capacity(0){}
-    continuos_container(const continuos_container &other) : size(other.size),
+    box(const box &other) : size(other.size),
         capacity(other.capacity){
         heap = simple_stack().allocate(capacity);
     }
 
-    ~continuos_container(){
+    ~box(){
         simple_stack().deallocate(heap, capacity);
     }
 
@@ -63,8 +61,7 @@ struct continuos_container{
             heap = newObj;
             capacity = reallocate;
         }
-        if(BorrowType())
-            heap[size++] = rvalue;
+        BorrowType() ? heap[size++] = rvalue :0;
     }
     void pop_back(){
         if(size > 0){
@@ -83,11 +80,12 @@ struct continuos_container{
 };
 
 int main(){
-    continuos_container<int> box;
-    box.push_back(1);
+    box<> box;
+    box.push_back(1+1);
     box.push_back(2);
     for(const auto &r : box){
         std::cout << r;
     }
     return 0;
 }
+
