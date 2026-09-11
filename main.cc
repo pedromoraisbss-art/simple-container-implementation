@@ -24,7 +24,7 @@ struct ordering_memory{
     }
     #define ordering_debugger_macro
     #ifdef ordering_debugger_macro
-        void ordering_debugger(){
+        virtual void ordering_debugger(size_t size){
             if(size > 0){
                 std::cout << err("allocated memory: ") << size << std::endl;
             }else{ /* ... */}
@@ -74,7 +74,7 @@ struct box{
         capacity(0){}
     box(const box &other) : size(other.size),
         capacity(other.capacity){
-        heap = simple_stack().allocate(capacity);
+        heap = simple_stack().order_allocate(capacity);
     }
 
     ~box(){
@@ -106,14 +106,22 @@ struct box{
     iterator end(){
         return iterator(heap + size);
     }
+    struct custom_virtual_optional : ordering_memory<t>{
+        virtual void ordering_debugger(size_t size){
+            /* ... */
+        };
+    };
+    ordering_memory<t> show_dp;
 };
 
 int main(){
-    box box;
-    box.push_back(1+1);
-    box.push_back(2);
-    for(const auto &r : box){
+    box boxi;
+    boxi.push_back(1);
+    boxi.push_back(2);
+    boxi.push_back(3);
+    for(const auto &r : boxi){
         std::cout << r;
     }
+    boxi.show_dp.ordering_debugger(boxi.size);
     return 0;
 }
