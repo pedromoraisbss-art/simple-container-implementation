@@ -12,20 +12,24 @@ __attribute__((always_inline)) inline std::string err(LogArgs args){
 template<class T>
 struct ordering_memory{
     using type = T;
+    std::size_t size;
     ordering_memory() noexcept{}
     T* order_allocate(std::size_t n){
-        #define ordering_debugger_macro
-        #ifdef ordering_debugger_macro
-            if(n > 0){
-                std::cout << err("allocated memory: ") << n << std::endl;
-            }
-        #endif
+        size += n;
         return static_cast<T*>(
             ::operator new(n * sizeof(T)));
     }
     void order_deallocate(type* p, std::size_t n){
         return ::operator delete(p);
     }
+    #define ordering_debugger_macro
+    #ifdef ordering_debugger_macro
+        void ordering_debugger(){
+            if(size > 0){
+                std::cout << err("allocated memory: ") << size << std::endl;
+            }else{ /* ... */}
+        }
+    #endif
 };
 
 
