@@ -1,10 +1,35 @@
 #include <cstddef>
 #include <iostream>
 #include <memory.h>
-#include <memory>
+#include <new>
 #include <type_traits>
 
-template<class t = int, class allocator = std::allocator<t>>
+using LogArgs = std::string;
+__attribute__((always_inline)) inline std::string err(LogArgs args){
+    return args;
+}
+
+template<class T>
+struct ordering_memory{
+    using type = T;
+    ordering_memory() noexcept{}
+    T* order_allocate(std::size_t n){
+        #define ordering_debugger_macro
+        #ifdef ordering_debugger_macro
+            if(n > 0){
+                std::cout << err("allocated memory: ") << n << std::endl;
+            }
+        #endif
+        return static_cast<T*>(
+            ::operator new(n * sizeof(T)));
+    }
+    void order_deallocate(type* p, std::size_t n){
+        return ::operator delete(p);
+    }
+};
+
+
+template<class t = int, class allocator = ordering_memory<t>>
 struct box{
     using type = t;
     using simple_stack = allocator;
@@ -49,15 +74,15 @@ struct box{
     }
 
     ~box(){
-        simple_stack().deallocate(heap, capacity);
+        simple_stack().order_deallocate(heap, capacity);
     }
 
     void push_back(const type &rvalue){
         if(size==capacity){
             size_t reallocate = capacity ? 2*capacity : 1;
-            type *newObj =  simple_stack().allocate(reallocate);
+            type *newObj =  simple_stack().order_allocate(reallocate);
             std::copy(heap, heap + size, newObj);
-            simple_stack().deallocate(heap, capacity);
+            simple_stack().order_deallocate(heap, capacity);
             heap = newObj;
             capacity = reallocate;
         }
@@ -80,7 +105,7 @@ struct box{
 };
 
 int main(){
-    box<> box;
+    box box;
     box.push_back(1+1);
     box.push_back(2);
     for(const auto &r : box){
@@ -88,4 +113,3 @@ int main(){
     }
     return 0;
 }
-
